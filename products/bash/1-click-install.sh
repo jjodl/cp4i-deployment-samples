@@ -481,14 +481,6 @@ else
   echo -e "$INFO [INFO] Retrieve the common service password using the command 'oc get secrets -n ibm-common-services platform-auth-idp-credentials -o jsonpath='{.data.admin_password}' | base64 --decode' "
 fi
 
-echo -e "$INFO [INFO] Installing OCP pipelines..."
-  if ! $CURRENT_DIR/../products/bash/install-ocp-pipeline.sh; then
-    echo -e "$CROSS [ERROR] Failed to install OCP pipelines\n"
-    exit 1
-  else
-    echo -e "$TICK [SUCCESS] Successfully installed OCP pipelines"
-  fi #install-ocp-pipeline.sh
-
 # Release the demo operator CR for eei
 cat <<EOF | oc apply -f -
 apiVersion: integration.ibm.com/v1beta1
