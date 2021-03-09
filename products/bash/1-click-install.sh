@@ -433,6 +433,18 @@ spec:
       interval: 45m
 EOF
 
+# Apply the Demo operator catalogsource
+cat <<EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: cp4i-demo-operator-catalog-source
+  namespace: openshift-marketplace
+spec:
+  sourceType: grpc
+  image: cp.stg.icr.io/cp/ibm-integration-demos-catalog:1.0.0-2021-03-09-1057-257d5c2c-license-fix@sha256:ffce4f7f5a42b4d1a0292427dec71b71457bda14649d2cea092f5585eab5f4c9
+EOF
+
 divider
 
 if ! $CURRENT_DIR/deploy-og-sub.sh -n "$DEPLOY_OPERATOR_NAMESPACE"; then
@@ -469,60 +481,58 @@ else
   echo -e "$INFO [INFO] Retrieve the common service password using the command 'oc get secrets -n ibm-common-services platform-auth-idp-credentials -o jsonpath='{.data.admin_password}' | base64 --decode' "
 fi
 
-if [[ "$demoPreparation" == "true" || "$drivewayDentDeletionDemo" == "true" || "$eventEnabledInsuranceDemo" == "true" ]]; then
-  divider && echo -e "$INFO [INFO] Setting up all required addons, products and demos in the '$JOB_NAMESPACE' namespace..."
-  CURRENT_DIR_WITHOUT_DOT_SLASH=${CURRENT_DIR//.\//}
-
-  # create a new backup json file to revert demos.json after setup script
-  cp $CURRENT_DIR_WITHOUT_DOT_SLASH/demos.json $CURRENT_DIR_WITHOUT_DOT_SLASH/demos-backup.json
-
-  echo -e "\n$INFO [INFO] Replacing all variables with their values in the demo json file to use as input for the demo script..."
-  # replace demo.json with variable values
-  sed -i -e "s/JOB_NAMESPACE/$JOB_NAMESPACE/g" $CURRENT_DIR_WITHOUT_DOT_SLASH/demos.json
-  sed -i -e "s/DEFAULT_BLOCK_STORAGE/$DEFAULT_BLOCK_STORAGE/g" $CURRENT_DIR_WITHOUT_DOT_SLASH/demos.json
-  sed -i -e "s/DEFAULT_FILE_STORAGE/$DEFAULT_FILE_STORAGE/g" $CURRENT_DIR_WITHOUT_DOT_SLASH/demos.json
-  sed -i -e "s/DEMO_DEPLOYMENT_BRANCH/$demoDeploymentBranch/g" $CURRENT_DIR_WITHOUT_DOT_SLASH/demos.json
-  sed -i -e "s/PORG_ADMIN_EMAIL/$demoAPICEmailAddress/g" $CURRENT_DIR_WITHOUT_DOT_SLASH/demos.json
-  sed -i -e "s/MAIL_SERVER_HOST/$demoAPICMailServerHost/g" $CURRENT_DIR_WITHOUT_DOT_SLASH/demos.json
-  sed -i -e "s/MAIL_SERVER_PORT/$demoAPICMailServerPort/g" $CURRENT_DIR_WITHOUT_DOT_SLASH/demos.json
-  sed -i -e "s/MAIL_SERVER_USERNAME/$demoAPICMailServerUsername/g" $CURRENT_DIR_WITHOUT_DOT_SLASH/demos.json
-  sed -i -e "s/MAIL_SERVER_PASSWORD/$demoAPICMailServerPassword/g" $CURRENT_DIR_WITHOUT_DOT_SLASH/demos.json
-  sed -i -e "s/DEMO_PREPARATION/$demoPreparation/g" $CURRENT_DIR_WITHOUT_DOT_SLASH/demos.json
-  sed -i -e "s/COGNITIVE_CAR_REPAIR_DEMO/$cognitiveCarRepairDemo/g" $CURRENT_DIR_WITHOUT_DOT_SLASH/demos.json
-  sed -i -e "s/DRIVEWAY_DENT_DELETION_DEMO/$drivewayDentDeletionDemo/g" $CURRENT_DIR_WITHOUT_DOT_SLASH/demos.json
-  sed -i -e "s/EVENT_ENABLED_INSURANCE_DEMO/$eventEnabledInsuranceDemo/g" $CURRENT_DIR_WITHOUT_DOT_SLASH/demos.json
-  sed -i -e "s/MAPPING_ASSIST_DEMO/$mappingAssistDemo/g" $CURRENT_DIR_WITHOUT_DOT_SLASH/demos.json
-  sed -i -e "s/WEATHER_CHATBOT_DEMO/$weatherChatbotDemo/g" $CURRENT_DIR_WITHOUT_DOT_SLASH/demos.json
-
-  if $CURRENT_DIR/setup-demos.sh -i $CURRENT_DIR_WITHOUT_DOT_SLASH/demos.json -o $CURRENT_DIR_WITHOUT_DOT_SLASH/demos-output.json; then
-    echo -e "$TICK [SUCCESS] Successfully setup all required addons, products and demos in the '$JOB_NAMESPACE' namespace"
-  else
-    echo -e "\n$CROSS [ERROR] Failed to setup all required addons, products and demos in the '$JOB_NAMESPACE' namespace"
-    divider
-    # restore content of demo json file and delete temporary and backup files
-    cp $CURRENT_DIR_WITHOUT_DOT_SLASH/demos-backup.json $CURRENT_DIR_WITHOUT_DOT_SLASH/demos.json
-    rm -rf $CURRENT_DIR_WITHOUT_DOT_SLASH/demos.json-e $CURRENT_DIR_WITHOUT_DOT_SLASH/demos-backup.json
+echo -e "$INFO [INFO] Installing OCP pipelines..."
+  if ! $CURRENT_DIR/../products/bash/install-ocp-pipeline.sh; then
+    echo -e "$CROSS [ERROR] Failed to install OCP pipelines\n"
     exit 1
-  fi
+  else
+    echo -e "$TICK [SUCCESS] Successfully installed OCP pipelines"
+  fi #install-ocp-pipeline.sh
 
-  # restore content of demo json file and delete temporary and backup files
-  cp $CURRENT_DIR_WITHOUT_DOT_SLASH/demos-backup.json $CURRENT_DIR_WITHOUT_DOT_SLASH/demos.json
-  rm -rf $CURRENT_DIR_WITHOUT_DOT_SLASH/demos.json-e $CURRENT_DIR_WITHOUT_DOT_SLASH/demos-backup.json
-
-  divider
-
-  if [[ ("$demoPreparation" == "true" || "$drivewayDentDeletionDemo" == "true") && ("$testDrivewayDentDeletionDemoE2E" == "true") ]]; then
-    echo -e "$INFO [INFO] Running an automated test for the driveway dent deletion demo in the '$JOB_NAMESPACE' namespace..."
-    if ! $CURRENT_DIR/../../DrivewayDentDeletion/Operators/test-ddd.sh -n "$JOB_NAMESPACE" -b "$demoDeploymentBranch" -f "$DEFAULT_FILE_STORAGE" -g "$DEFAULT_BLOCK_STORAGE"; then
-      echo -e "$CROSS [ERROR] Failed to run automated test for driveway dent deletion demo in the '$JOB_NAMESPACE' namespace"
-      divider
-      exit 1
-    else
-      echo -e "$TICK [SUCCESS] Successfully ran the automated test for driveway dent deletion demo in the '$JOB_NAMESPACE' namespace"
-    fi
-  elif [[ "$demoPreparation" == "false" && "$drivewayDentDeletionDemo" == "false" && "$testDrivewayDentDeletionDemoE2E" == "true" ]]; then
-    echo -e "$INFO [INFO] 'testDrivewayDentDeletionDemoE2E' option was set to 'true'.\n\n$INFO [INFO] To run an automated test for driveway dent deletion demo, set the 'demoPreparation' or 'drivewayDentDeletionDemo' option to 'true' along with the 'testDrivewayDentDeletionDemoE2E' option as 'true'."
-  fi
-fi
+# Release the demo operator CR for eei
+cat <<EOF | oc apply -f -
+apiVersion: integration.ibm.com/v1beta1
+kind: Demo
+metadata:
+  name: demo-eei
+  namespace: ${JOB_NAMESPACE}
+spec:
+  addons:
+    elasticSearch: true
+    ocpPipelines: true
+    postgres: true
+  apic:
+    emailAddress: ${demoAPICEmailAddress}
+    mailServerHost: ${demoAPICMailServerHost}
+    mailServerPassword: ${demoAPICMailServerPassword}
+    mailServerPort: ${demoAPICMailServerPort}
+    mailServerUsername: ${demoAPICMailServerUsername}
+  demos:
+    cognitiveCarRepair: false
+    drivewayDentDeletion: false
+    eventEnabledInsurance: true
+    mappingAssist: false
+    weatherChatbot: false
+  general:
+    storage:
+      block:
+        class: cp4i-block-performance
+      file:
+        class: ibmc-file-gold-gid
+  license:
+    accept: true
+    ace: L-APEH-BPUCJK
+    demo: L-RJON-BYRMYW
+    mq: L-RJON-BN7PN3
+  products:
+    aceDashboard: true
+    aceDesigner: false
+    apic: true
+    assetRepo: false
+    eventStreams: true
+    mq: true
+    tracing: true
+  version: 2021.1.1
+EOF
 
 divider && echo -e "$INFO [INFO] The 1-click installation took $(($SECONDS / 60 / 60 % 24)) hour(s) $(($SECONDS / 60 % 60)) minutes and $(($SECONDS % 60)) seconds." && divider

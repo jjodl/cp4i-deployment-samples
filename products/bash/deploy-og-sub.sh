@@ -219,6 +219,9 @@ echo "INFO: Apply the APIC/Tracing subscriptions"
 create_subscription ${namespace} "ibm-operator-catalog" "ibm-apiconnect" "v2.0"
 create_subscription ${namespace} "ibm-operator-catalog" "ibm-integration-operations-dashboard" "v2.0"
 
+echo "INFO: Create Demo Operator subscriptions"
+create_subscription ${namespace} "ibm-operator-catalog" "ibm-integration-demos-operator" "v1.0"
+
 # echo "INFO: Applying the subscription for the uber operator"
 # create_subscription ${namespace} "ibm-operator-catalog" "ibm-cp-integration" "v1.0"
 # echo "INFO: ClusterServiceVersion for the Platform Navigator is now installed, proceeding with installation..."
