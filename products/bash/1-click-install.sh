@@ -442,7 +442,7 @@ metadata:
   namespace: openshift-marketplace
 spec:
   sourceType: grpc
-  image: cp.stg.icr.io/cp/ibm-integration-demos-catalog:1.0.0-2021-03-09-1057-257d5c2c-license-fix@sha256:ffce4f7f5a42b4d1a0292427dec71b71457bda14649d2cea092f5585eab5f4c9
+  image: cp.stg.icr.io/cp/ibm-integration-demos-catalog:1.0.0-2021-03-10-0923-3b8d3254@sha256:b1362d0ce4633669acb716ce256f926cea06ca4a58441d8983d4a36977d391c7
 EOF
 
 divider
