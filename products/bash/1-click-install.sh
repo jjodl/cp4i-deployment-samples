@@ -431,10 +431,9 @@ spec:
   updateStrategy:
     registryPoll:
       interval: 45m
-EOF
 
-# Apply the Demo operator catalogsource
-cat <<EOF | oc apply -f -
+---
+
 apiVersion: operators.coreos.com/v1alpha1
 kind: CatalogSource
 metadata:
@@ -443,7 +442,14 @@ metadata:
 spec:
   sourceType: grpc
   image: cp.stg.icr.io/cp/ibm-integration-demos-catalog:1.0.0-2021-03-10-0923-3b8d3254@sha256:b1362d0ce4633669acb716ce256f926cea06ca4a58441d8983d4a36977d391c7
+
 EOF
+
+echo "[Lauren] - $(oc get CatalogSource -n openshift-marketplace)"
+if ! oc get CatalogSource cp4i-demo-operator-catalog-source -n openshift-marketplace >/dev/null 2>&1; then
+  echo "Not found"
+  exit 1
+fi
 
 divider
 

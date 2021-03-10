@@ -219,10 +219,10 @@ echo "INFO: Apply the APIC/Tracing subscriptions"
 create_subscription ${namespace} "ibm-operator-catalog" "ibm-apiconnect" "v2.0"
 create_subscription ${namespace} "ibm-operator-catalog" "ibm-integration-operations-dashboard" "v2.0"
 
-echo "INFO: Create Demo Operator subscriptions"
+echo "INFO: Create OCP Pipeline subscription"
 create_subscription "openshift-operators" "redhat-operators" "openshift-pipelines-operator-rh" "v1.0"
 
-echo "INFO: Create Demo Operator subscriptions"
+echo "INFO: Create Demo Operator subscription"
 create_subscription ${namespace} "ibm-operator-catalog" "ibm-integration-demos-operator" "v1.0"
 
 # echo "INFO: Applying the subscription for the uber operator"
