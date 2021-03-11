@@ -445,12 +445,6 @@ spec:
 
 EOF
 
-echo "[Lauren] - $(oc get CatalogSource -n openshift-marketplace)"
-if ! oc get CatalogSource cp4i-demo-operator-catalog-source -n openshift-marketplace >/dev/null 2>&1; then
-  echo "Not found"
-  exit 1
-fi
-
 divider
 
 if ! $CURRENT_DIR/deploy-og-sub.sh -n "$DEPLOY_OPERATOR_NAMESPACE"; then
